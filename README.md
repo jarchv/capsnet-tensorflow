@@ -1,1 +1,1 @@
-# capsnet-tensorflow
+# TensorFlow implementation for CapsNet

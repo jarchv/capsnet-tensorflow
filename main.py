@@ -9,10 +9,10 @@ mnist = input_data.read_data_sets('MNIST_data/')
 
 
 
-def train(model):
+def train(model, restore = False):
 	init = tf.global_variables_initializer()
 
-	#saver = tf.train.Saver()
+	saver = tf.train.Saver()
 
 	n_epochs = 10
 	batch_size = 50
@@ -22,10 +22,17 @@ def train(model):
 
 	best_acc_val = 0.0
 
-	print('\n\n Running CapsNet ...\n')
-	with tf.Session() as sess:
-		init.run()
+	
 
+	checkpoint_file = './capsnet'
+	with tf.Session() as sess:
+
+		if restore and tf.train.checkpoint_exists(checkpoint_file):
+			saver.restore(sess, checkpoint_file)
+		else:
+			init.run()
+
+		print('\n\nRunning CapsNet ...\n')
 		for epoch in range(n_epochs):
 			loss_train_ep = []
 			for it in range(1, n_iter_train_per_epoch + 1):
@@ -66,6 +73,7 @@ def train(model):
 						epoch + 1, loss_train, loss_val, acc_val * 100.0, "(improved)" if acc_val > best_acc_val else ""))
 
 			if acc_val > best_acc_val:
+				save_file = saver.save(sess, checkpoint_file)
 				best_acc_val = acc_val
 
 if __name__ == '__main__':

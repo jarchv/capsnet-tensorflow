@@ -1,2 +1,7 @@
 MNIST_data
 __pycache__
+capsnet.meta
+capsnet.index
+capsnet.data*
+checkpoint
+

@@ -24,13 +24,21 @@ class CapsNet:
 
 	def build_model(self):
 		self.Conv1 		= caps('conv2d').layer(	 inputs = self.X,
-												filters = 256, 
+												filters = 32, 
 												kernel_size = 9, 
 												activation = tf.nn.relu,
 												name   = 'Conv1'
 												)
 
-		self.PrimaryCaps = caps('primary').layer(inputs 	= self.Conv1,
+		self.Conv2 		= caps('conv2d').layer(	inputs = self.Conv1,
+												filters = 256, 
+												kernel_size = 9,
+												padding = 'same', 
+												activation = tf.nn.relu,
+												name   = 'Conv2'
+												)
+
+		self.PrimaryCaps = caps('primary').layer(inputs 	= self.Conv2,
 												kernel_size = 9,
 												strides 	= 2,
 												activation  = tf.nn.relu,
@@ -42,7 +50,7 @@ class CapsNet:
 		self.DigitCaps 	= caps('digit').layer(	inputs = self.PrimaryCaps,
 												caps_units 	= self.classes,
 												caps_dim  	= 16,
-												rounds		= 3,
+												rounds		= 2,
 												name		= 'DigitCaps')
 
 		with tf.variable_scope('masking'):
@@ -54,10 +62,10 @@ class CapsNet:
 			self.accuracy = tf.reduce_mean(tf.cast(self.correct, tf.float32), name = 'accuracy_mean')
 
 		with tf.variable_scope('Train'):
-			self.optimizer = tf.train.AdamOptimizer()
+			self.optimizer = tf.train.AdamOptimizer(learning_rate = 0.0001)
 			self.train_op  = self.optimizer.minimize(self.batch_loss, name = 'train_op')
 
-	def safe_length(self, v_j, axis, epsilon = 1e-7, keepdims = False, name = None):
+	def safe_length(self, v_j, axis, epsilon = 1e-9, keepdims = False, name = None):
 		with tf.variable_scope('safe_lenght'):
 			v_j_squared =  tf.reduce_sum(	tf.square(v_j), 
 											axis 	 = axis,
@@ -85,17 +93,20 @@ class CapsNet:
 		return batch_loss
 
 	def reconstruction_loss(self):
-		self.argmax_target = tf.argmax(self.v_j_length, axis = 2, name = 'argmax_target')
-		self.y_pred        = tf.squeeze(self.argmax_target, axis =[1, 2], name = 'y_pred')
+		#print(self.v_j_length.shape, " v_j_length")
+		self.argmax_target = tf.argmax(self.v_j_length, axis = 1, name = 'argmax_target')
+		#print(self.argmax_target.shape, " argmax")
+		self.y_pred        = tf.squeeze(self.argmax_target, axis = 1, name = 'y_pred')
 
 		self.reconstruction = tf.placeholder_with_default(False, shape = (), name = 'label_mask')		
 		self.label_to_mask  = tf.cond(self.reconstruction, lambda: self.y, lambda: self.y_pred, name = 'label_to_mask')
 
 		self.mask 				= tf.one_hot(self.label_to_mask, depth = self.classes, name = 'mask')
-		self.mask_reshaped  	= tf.reshape(self.mask, shape = [-1, 1, self.classes, 1, 1])
-		self.caps_output_masked = tf.multiply(self.DigitCaps, self.mask_reshaped, name = 'caps_output_masked')
-
-		self.decoder_input = tf.reshape(self.caps_output_masked, shape = [-1, self.classes * self.caps_output_masked.shape[-2].value])
+		self.mask_reshaped  	= tf.reshape(self.mask, shape = [-1, self.classes, 1, 1])
+		#print(self.DigitCaps.shape, ' self.DigitCaps')
+		self.caps_output_masked = tf.multiply(self.DigitCaps, self.mask_reshaped, name = 'caps_output_masked') # [?, 16, 10, 1]
+		#print(self.caps_output_masked.shape, ' self.caps_output_masked')
+		self.decoder_input = tf.reshape(self.caps_output_masked, shape = [-1, self.classes * self.caps_output_masked.shape[-2].value]) # [?, 160]
 
 
 		with tf.name_scope('Decoder'):

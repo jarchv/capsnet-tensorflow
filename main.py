@@ -18,9 +18,7 @@ def train(model, restore = False):
 	n_iter_train_per_epoch = mnist.train.num_examples // batch_size
 	n_iter_valid_per_epoch = mnist.validation.num_examples // batch_size
 
-	best_loss_val = 0.0
-
-	
+	best_loss_val = np.infty
 
 	checkpoint_file = './capsnet'
 
@@ -73,7 +71,7 @@ def train(model, restore = False):
 			print("\repoch: {} loss_train: {:.5f}, loss_val: {:.5f}, valid_accuracy: {:.4f}% {}".format(
 						epoch + 1, loss_train, loss_val, acc_val * 100.0, "(improved)" if loss_val < best_loss_val else ""))
 
-			if loss_val > best_loss_val:
+			if loss_val < best_loss_val:
 				save_file = saver.save(sess, checkpoint_file)
 				best_loss_val = loss_val
 
@@ -89,6 +87,8 @@ def test(model):
 
 	with tf.Session() as sess:
 		saver.restore(sess, checkpoint_file)
+
+		print('\n\nTest\n')
 		for it in range(1, n_iter_test_per_epoch + 1):
 			X_batch, y_batch = mnist.test.next_batch(batch_size)
 			loss_batch_test, acc_batch_test = sess.run(
@@ -142,6 +142,6 @@ def reconstruction(model, num_samples):
 if __name__ == '__main__':
 
 	model = CapsNet()
-	train(model, False)
-	#test(model)
+	#train(model, True)
+	test(model)
 	#reconstruction(model, 5)

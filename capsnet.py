@@ -8,7 +8,7 @@ class CapsNet:
 						m_plus  = 0.9,
 						m_minus = 0.1,
 						lambda_ = 0.5,
-						alpha   = 0.0005) :
+						alpha   = 0.005) :
 
 		tf.reset_default_graph()
 
@@ -53,6 +53,8 @@ class CapsNet:
 												rounds		= 2,
 												name		= 'DigitCaps')
 
+		self.y = tf.placeholder(shape = [None], dtype = tf.int64, name = 'y')
+
 		with tf.variable_scope('masking'):
 			self.v_j_length = self.safe_length(self.DigitCaps, axis = -2)
 			self.batch_loss = self.margin_loss() + self.reconstruction_loss() * self.alpha	
@@ -80,7 +82,7 @@ class CapsNet:
 		self.present_e = tf.reshape(self.present_e_raw, shape = (-1, self.classes))
 		self.absent_e  = tf.reshape(self.absent_e_raw , shape = (-1, self.classes))
 
-		self.y = tf.placeholder(shape = [None], dtype = tf.int64, name = 'y')
+		
 		T = tf.one_hot(self.y, depth = self.classes, name = 'T')
 
 

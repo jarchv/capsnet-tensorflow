@@ -12,7 +12,7 @@ batch_size = 64
 
 def train(model, restore = False):
 	init = tf.global_variables_initializer()
-	n_epochs = 10
+	n_epochs = 50
 	
 
 	n_iter_train_per_epoch = mnist.train.num_examples // batch_size
@@ -26,6 +26,7 @@ def train(model, restore = False):
 
 	saver = tf.train.Saver()
 	with tf.Session() as sess:
+		writer = tf.summary.FileWriter("output", sess.graph)
 
 		if restore and tf.train.checkpoint_exists(checkpoint_file):
 			saver.restore(sess, checkpoint_file)
@@ -75,6 +76,8 @@ def train(model, restore = False):
 			if loss_val > best_loss_val:
 				save_file = saver.save(sess, checkpoint_file)
 				best_loss_val = loss_val
+
+		writer.close()
 
 def test(model):
 	checkpoint_file = './capsnet'
@@ -139,6 +142,6 @@ def reconstruction(model, num_samples):
 if __name__ == '__main__':
 
 	model = CapsNet()
-	train(model)
+	train(model, False)
 	#test(model)
 	#reconstruction(model, 5)

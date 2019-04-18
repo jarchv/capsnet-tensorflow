@@ -49,20 +49,21 @@ class CapsNet:
 			output    = self.squash(s, name = 'PrimaryCapsule_output')
 
 		elif self.mode == 'digit':
-			inputs_expanded = tf.expand_dims(inputs, -1, name = 'inputs_expanded') # [?, 1152, 8, 1]
-			inputs_tile     = tf.expand_dims(inputs_expanded,  2, name = 'inputs_tile') # [?, 1152, 1, 8, 1]
+			with tf.name_scope(name):
+				inputs_expanded = tf.expand_dims(inputs, -1, name = 'inputs_expanded') # [?, 1152, 8, 1]
+				inputs_tile     = tf.expand_dims(inputs_expanded,  2, name = 'inputs_tile') # [?, 1152, 1, 8, 1]
 
-			self.caps_units = caps_units
-			self.caps_dim   = caps_dim
-			self.rounds		= rounds
+				self.caps_units = caps_units
+				self.caps_dim   = caps_dim
+				self.rounds		= rounds
 
-			with tf.variable_scope('routing'):
-				batch_size 		= tf.shape(inputs)[0]
-				#routing_logits 	= tf.zeros(shape = [batch_size, inputs.shape[1], caps_units, 1, 1], dtype = tf.float32, 
-				#																			   	    name  = 'rouring_logits')
-				routing_logits 	= tf.zeros(shape = [batch_size, caps_units, 1, 1], dtype = tf.float32, 
-																							   	    name  = 'rouring_logits')
-				output = self.routing(inputs_tile, routing_logits, inputs.shape.as_list())
+				with tf.variable_scope('routing'):
+					batch_size 		= tf.shape(inputs)[0]
+					#routing_logits 	= tf.zeros(shape = [batch_size, inputs.shape[1], caps_units, 1, 1], dtype = tf.float32, 
+					#																			   	    name  = 'rouring_logits')
+					routing_logits 	= tf.zeros(shape = [batch_size, caps_units, 1, 1], dtype = tf.float32, 
+																								   	    name  = 'rouring_logits')
+					output = self.routing(inputs_tile, routing_logits, inputs.shape.as_list())
 
 		return output		
 

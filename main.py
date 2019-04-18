@@ -7,18 +7,19 @@ from capsnet import CapsNet
 from tensorflow.examples.tutorials.mnist import input_data
 
 mnist = input_data.read_data_sets('MNIST_data/')
-batch_size = 64
+batch_size = 32
 
 
 def train(model, restore = False):
 	init = tf.global_variables_initializer()
-	n_epochs = 50
+	n_epochs = 990
 	
 
 	n_iter_train_per_epoch = mnist.train.num_examples // batch_size
 	n_iter_valid_per_epoch = mnist.validation.num_examples // batch_size
 
-	best_loss_val = np.infty
+	#best_loss_val = np.infty
+	best_loss_val = 0.00341
 
 	checkpoint_file = './capsnet'
 
@@ -103,7 +104,7 @@ def test(model):
 		loss_test = np.mean(loss_test_ep)
 		acc_test  = np.mean(acc_test_ep)
 
-		print("\r(Testing) accuracy: {:.2f}%, loss: {:.4f}".format(acc_test*100.0, loss_test))
+		print("\r(Testing) accuracy: {:.3f}%, loss: {:.4f}".format(acc_test*100.0, loss_test))
 
 def reconstruction(model, num_samples):
 	checkpoint_file = './capsnet'

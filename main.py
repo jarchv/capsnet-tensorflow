@@ -12,14 +12,14 @@ batch_size = 32
 
 def train(model, restore = False):
 	init = tf.global_variables_initializer()
-	n_epochs = 990
+	n_epochs = 100
 	
 
 	n_iter_train_per_epoch = mnist.train.num_examples // batch_size
 	n_iter_valid_per_epoch = mnist.validation.num_examples // batch_size
 
-	#best_loss_val = np.infty
-	best_loss_val = 0.00341
+	best_loss_val = np.infty
+	#best_loss_val = 0.00341
 
 	checkpoint_file = './capsnet'
 
@@ -143,6 +143,6 @@ def reconstruction(model, num_samples):
 if __name__ == '__main__':
 
 	model = CapsNet()
-	#train(model, True)
+	#train(model, False)
 	test(model)
 	#reconstruction(model, 5)

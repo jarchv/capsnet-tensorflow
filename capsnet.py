@@ -24,21 +24,13 @@ class CapsNet:
 
 	def build_model(self):
 		self.Conv1 		= caps('conv2d').layer(	 inputs = self.X,
-												filters = 32, 
+												filters = 256, 
 												kernel_size = 9, 
 												activation = tf.nn.relu,
 												name   = 'Conv1'
 												)
 
-		self.Conv2 		= caps('conv2d').layer(	inputs = self.Conv1,
-												filters = 256, 
-												kernel_size = 9,
-												padding = 'same', 
-												activation = tf.nn.relu,
-												name   = 'Conv2'
-												)
-
-		self.PrimaryCaps = caps('primary').layer(inputs 	= self.Conv2,
+		self.PrimaryCaps = caps('primary').layer(inputs 	= self.Conv1,
 												kernel_size = 9,
 												strides 	= 2,
 												activation  = tf.nn.relu,

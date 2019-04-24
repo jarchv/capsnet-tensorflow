@@ -3,7 +3,7 @@
 ## Test error rate on MNIST
 
 
-|   	 Method        | Rourting | Reconstruction | Epochs | Test Error(%) |
-|----------------------|----------|----------------|--------|---------------|
-|   1Conv + 1PC + 1DC  |    -     |       -        |    -   |        -      |
-|   2Conv + 1PC + 1DC  |    3     |      yes       |   200  |      0.57     | 
+|   	 Method        | Routing  | Reconstruction | Epochs | Batch Size | Test Error(%) |
+|----------------------|----------|----------------|--------|------------|---------------|
+|   1Conv + 1PC + 1DC  |    2     |      yes       |    40  |     32     |      0.64     |
+|   2Conv + 1PC + 1DC  |    2     |      yes       |   200  |     32     |      0.57     | 

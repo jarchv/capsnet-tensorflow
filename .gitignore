@@ -5,3 +5,4 @@ capsnet.index
 capsnet.data*
 checkpoint
 output
+checkpoints

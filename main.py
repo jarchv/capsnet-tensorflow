@@ -143,6 +143,6 @@ def reconstruction(model, num_samples):
 if __name__ == '__main__':
 
 	model = CapsNet()
-	#train(model, False)
-	test(model)
+	train(model, False)
+	#test(model)
 	#reconstruction(model, 5)

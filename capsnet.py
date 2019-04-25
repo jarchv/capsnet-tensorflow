@@ -8,7 +8,7 @@ class CapsNet:
 						m_plus  = 0.9,
 						m_minus = 0.1,
 						lambda_ = 0.5,
-						alpha   = 0.005,
+						alpha   = 0.0005,
 						rounds  = 3) :
 
 		tf.reset_default_graph()
@@ -21,7 +21,7 @@ class CapsNet:
 		self.lambda_ = lambda_
 		self.alpha   = alpha
 		self.rounds  = rounds
-		
+
 		self.build_model()
 
 	def build_model(self):

@@ -8,7 +8,8 @@ class CapsNet:
 						m_plus  = 0.9,
 						m_minus = 0.1,
 						lambda_ = 0.5,
-						alpha   = 0.005) :
+						alpha   = 0.005,
+						rounds  = 3) :
 
 		tf.reset_default_graph()
 
@@ -19,7 +20,8 @@ class CapsNet:
 		self.m_minus = m_minus
 		self.lambda_ = lambda_
 		self.alpha   = alpha
-
+		self.rounds  = rounds
+		
 		self.build_model()
 
 	def build_model(self):
@@ -42,7 +44,7 @@ class CapsNet:
 		self.DigitCaps 	= caps('digit').layer(	inputs = self.PrimaryCaps,
 												caps_units 	= self.classes,
 												caps_dim  	= 16,
-												rounds		= 2,
+												rounds		= self.rounds,
 												name		= 'DigitCaps')
 
 		self.y = tf.placeholder(shape = [None], dtype = tf.int64, name = 'y')

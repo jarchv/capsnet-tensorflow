@@ -12,7 +12,7 @@ batch_size = 32
 
 def train(model, restore = False):
 	init = tf.global_variables_initializer()
-	n_epochs = 100
+	n_epochs = 50
 	
 
 	n_iter_train_per_epoch = mnist.train.num_examples // batch_size
@@ -142,7 +142,7 @@ def reconstruction(model, num_samples):
 	plt.show()
 if __name__ == '__main__':
 
-	model = CapsNet()
-	train(model, False)
-	#test(model)
+	model = CapsNet(rounds = 3)
+	#train(model, False)
+	test(model)
 	#reconstruction(model, 5)

@@ -25,7 +25,10 @@ class CapsNet:
 		self.build_model()
 
 	def build_model(self):
-		self.Conv1 		= caps('conv2d').layer(	 inputs = self.X,
+
+		self.X_pad      = tf.image.resize_image_with_crop_or_pad(self.X, 32, 32)
+		self.X_cropped  = tf.random_crop(self.X_pad, [tf.shape(self.X)[0], 28, 28, 1])
+		self.Conv1 		= caps('conv2d').layer(	 inputs = self.X_cropped,
 												filters = 256, 
 												kernel_size = 9, 
 												activation = tf.nn.relu,
@@ -121,7 +124,7 @@ class CapsNet:
 													activation  = tf.nn.sigmoid,
 													name  		= 'decoder_output')
 
-		self.flatten_X = tf.reshape(self.X, shape = [-1, 784], name = 'flatten_X')
+		self.flatten_X = tf.reshape(self.X_cropped, shape = [-1, 784], name = 'flatten_X')
 
 		self.squared_diff = tf.square(self.flatten_X - self.decoder_output, name = 'squared_diff')
 		self.reconstruction_batch_loss = tf.reduce_mean(self.squared_diff, name = 'reconstruction_loss')

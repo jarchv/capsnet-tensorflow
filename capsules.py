@@ -51,7 +51,7 @@ class CapsNet:
 		elif self.mode == 'digit':
 			with tf.name_scope(name):
 				inputs_expanded = tf.expand_dims(inputs, -1, name = 'inputs_expanded') # [?, 1152, 8, 1]
-				inputs_tile     = tf.expand_dims(inputs_expanded,  2, name = 'inputs_tile') # [?, 1152, 1, 8, 1]
+				inputs_tile     = tf.expand_dims(inputs_expanded,  1, name = 'inputs_tile') # [?, 1, 1152, 8, 1]
 
 				self.caps_units = caps_units
 				self.caps_dim   = caps_dim
@@ -77,23 +77,23 @@ class CapsNet:
 	def routing(self, inputs_tile, routing_logits, inputs_shape):
 
 		W_init  		= tf.random_normal( 
-							shape  = (1, inputs_shape[1], self.caps_units * self.caps_dim, inputs_shape[-1], 1),
+							shape  = (1, self.caps_units * self.caps_dim, inputs_shape[1], inputs_shape[-1], 1), #[1,160,1152,8,1]
 							stddev = 0.1, 
 							dtype  = tf.float32,
 							name   = 'W_init')
 		
-		W 				= tf.Variable(W_init, name = 'W') # [?, 1152, 160, 8, 1]
+		W 				= tf.Variable(W_init, name = 'W') # [1,160,1152,8,1]
 		biases 			= tf.get_variable(name = 'biases', shape = (1, self.caps_units, self.caps_dim, 1)) # [?, 10, 16, 1]
 
-		biases_u_hat    = tf.get_variable(name = 'biases_u_hat', shape = (1, 1, 160, 1, 1))  		
-		inputs_tiled    = tf.tile(inputs_tile, [1, 1, self.caps_units * self.caps_dim, 1, 1], 
-									name = 'inputs_tiled') # [?, 1152, 160, 8, 1]
+		biases_u_hat    = tf.get_variable(name = 'biases_u_hat', shape = (1, 160, 1, 1, 1))  		
+		inputs_tiled    = tf.tile(inputs_tile, [1, self.caps_units * self.caps_dim, 1, 1, 1], 
+									name = 'inputs_tiled') # [?, 160, 1152, 8, 1]
 
-		Wu				 	= W * inputs_tiled # [?, 1152, 160, 8, 1]
-		u_hat 			 	= tf.reduce_sum(Wu, axis = [1, 3], keepdims = True, name = 'u_hat') + biases_u_hat# [?, 1, 160, 1, 1]
+		Wu				 	= W * inputs_tiled # [?, 160, 1152, 8, 1]
+		u_hat 			 	= tf.reduce_sum(Wu, axis = [2, 3], keepdims = True, name = 'u_hat') + biases_u_hat# [?,160,1,1,1]
 		
 		pred_vec 	     	= tf.reshape(u_hat, shape = [-1, self.caps_units, self.caps_dim, 1], 
-												name = 'pred_vec')
+												name = 'pred_vec') #[?, 16, 10, 1]
 		pred_vec_stopped	= tf.stop_gradient(pred_vec, name = 'pred_vec_stopped') #[?, 16, 10, 1]
 
 		#print('pred_vec: ', pred_vec.shape)

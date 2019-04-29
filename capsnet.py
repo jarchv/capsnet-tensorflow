@@ -61,8 +61,9 @@ class CapsNet:
 			self.accuracy = tf.reduce_mean(tf.cast(self.correct, tf.float32), name = 'accuracy_mean')
 
 		with tf.variable_scope('Train'):
+			global_step = tf.Variable(0, trainable=False)
 			self.optimizer = tf.train.AdamOptimizer(learning_rate = 0.0001)
-			self.train_op  = self.optimizer.minimize(self.batch_loss, name = 'train_op')
+			self.train_op  = self.optimizer.minimize(self.batch_loss, global_step=global_step, name = 'train_op')
 
 	def safe_length(self, v_j, axis, epsilon = 1e-9, keepdims = False, name = None):
 		with tf.variable_scope('safe_lenght'):

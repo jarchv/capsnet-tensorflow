@@ -1,3 +1,13 @@
+#!/usr/bin/env python
+#title           :main.py
+#description     :Tensorflow implementation of CapsNet.
+#author          :Jose Chavez
+#date            :2019/04/30
+#version         :1.0
+#usage           :python3 main.py
+#python_version  :3.6.7
+#==============================================================================
+
 import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
@@ -9,6 +19,12 @@ from tensorflow.examples.tutorials.mnist import input_data
 mnist = input_data.read_data_sets('MNIST_data/')
 batch_size = 32
 
+tf.reset_default_graph()
+
+tf.random.set_random_seed(0)
+np.random.seed(0)
+
+checkpoint_file = './tmp/model.ckpt'
 
 def train(model, restore = False, n_epochs = 50):
     init = tf.global_variables_initializer()	
@@ -38,8 +54,8 @@ def train(model, restore = False, n_epochs = 50):
                 _, loss_batch_train, acc_batch_train = sess.run(
                                 [model.train_op, model.batch_loss, model.accuracy],
                                 feed_dict = {model.X: X_batch.reshape([-1, 28, 28, 1]),
-                                                model.y: y_batch,
-                                                model.reconstruction: True})
+                                            model.y: y_batch,
+                                            model.reconstruction: True})
 
                 print("\rIter: {}/{} [{:.1f}%] loss : {:.5f}".format(
                     it, n_iter_train_per_epoch, 100.0 * it / n_iter_train_per_epoch, loss_batch_train), end="")
@@ -57,7 +73,7 @@ def train(model, restore = False, n_epochs = 50):
                 loss_batch_val, acc_batch_val = sess.run(
                                 [model.batch_loss, model.accuracy],
                                 feed_dict = {model.X_cropped: X_batch.reshape([-1, 28, 28, 1]),
-                                                model.y: y_batch})
+                                            model.y: y_batch})
 
                 loss_val_ep.append(loss_batch_val)
                 acc_val_ep.append(acc_batch_val)
@@ -95,9 +111,9 @@ def test(model):
 			X_batch, y_batch = mnist.test.next_batch(batch_size)
 			loss_batch_test, acc_batch_test = sess.run(
 								[model.batch_loss, model.accuracy],
-								feed_dict = {	model.X_cropped: X_batch.reshape([-1, 28, 28, 1]),
-												model.y: y_batch,
-												model.reconstruction: False})
+								feed_dict = { model.X_cropped: X_batch.reshape([-1, 28, 28, 1]),
+															model.y: y_batch,
+															model.reconstruction: False})
 
 			loss_test_ep.append(loss_batch_test)
 			acc_test_ep.append(acc_batch_test)
@@ -118,7 +134,7 @@ def reconstruction(model, num_samples):
 		decoder_output, y_pred_value = sess.run(
 			[model.decoder_output, model.y_pred],
 			feed_dict = {	model.X: samples_imgs,
-							model.y: np.array([], dtype = np.int64)})
+										model.y: np.array([], dtype = np.int64)})
 
 
 	samples_imgs = samples_imgs.reshape([-1, 28, 28])

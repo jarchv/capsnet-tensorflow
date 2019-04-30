@@ -10,96 +10,98 @@ mnist = input_data.read_data_sets('MNIST_data/')
 batch_size = 32
 
 
-def train(model, restore = False):
-	init = tf.global_variables_initializer()
-	n_epochs = 50
-	
+def train(model, restore = False, n_epochs = 50):
+    init = tf.global_variables_initializer()	
 
-	n_iter_train_per_epoch = mnist.train.num_examples // batch_size
-	n_iter_valid_per_epoch = mnist.validation.num_examples // batch_size
+    n_iter_train_per_epoch = mnist.train.num_examples // batch_size
+    n_iter_valid_per_epoch = mnist.validation.num_examples // batch_size
 
-	best_loss_val = np.infty
-	#best_loss_val = 0.00341
+    best_loss_val = np.infty
+    
+    saver = tf.train.Saver()
+    
+    with tf.Session() as sess:
+        writer = tf.summary.FileWriter("output", sess.graph)
 
-	checkpoint_file = './capsnet'
+        if restore and tf.train.checkpoint_exists('checkpoint_file'):
+            saver.restore(sess, checkpoint_file)
+        else:
+            init.run()
 
-	saver = tf.train.Saver()
-	with tf.Session() as sess:
-		writer = tf.summary.FileWriter("output", sess.graph)
+        print('\n\nRunning CapsNet ...\n')
+        for epoch in range(n_epochs):
+            loss_train_ep = []
+            acc_train_ep  = []
+            for it in range(1, n_iter_train_per_epoch + 1):
+                X_batch, y_batch = mnist.train.next_batch(batch_size)
 
-		if restore and tf.train.checkpoint_exists(checkpoint_file):
-			saver.restore(sess, checkpoint_file)
-		else:
-			init.run()
+                _, loss_batch_train, acc_batch_train = sess.run(
+                                [model.train_op, model.batch_loss, model.accuracy],
+                                feed_dict = {model.X: X_batch.reshape([-1, 28, 28, 1]),
+                                                model.y: y_batch,
+                                                model.reconstruction: True})
 
-		print('\n\nRunning CapsNet ...\n')
-		for epoch in range(n_epochs):
-			loss_train_ep = []
-			for it in range(1, n_iter_train_per_epoch + 1):
-				X_batch, y_batch = mnist.train.next_batch(batch_size)
+                print("\rIter: {}/{} [{:.1f}%] loss : {:.5f}".format(
+                    it, n_iter_train_per_epoch, 100.0 * it / n_iter_train_per_epoch, loss_batch_train), end="")
 
-				_, loss_batch_train = sess.run(
-								[model.train_op, model.batch_loss],
-								feed_dict = {	model.X: X_batch.reshape([-1, 28, 28, 1]),
-												model.y: y_batch,
-												model.reconstruction: True})
+                loss_train_ep.append(loss_batch_train)
+                acc_train_ep.append(acc_batch_train)
+            loss_train = np.mean(loss_train_ep)
+            acc_train = np.mean(acc_train_ep)
+            
+            loss_val_ep = []
+            acc_val_ep  = []
 
-				print("\rIter: {}/{} [{:.1f}%] loss : {:.5f}".format(
-					it, n_iter_train_per_epoch, 100.0 * it / n_iter_train_per_epoch, loss_batch_train), end="")
+            for it in range(1, n_iter_valid_per_epoch + 1):
+                X_batch, y_batch = mnist.validation.next_batch(batch_size)
+                loss_batch_val, acc_batch_val = sess.run(
+                                [model.batch_loss, model.accuracy],
+                                feed_dict = {model.X_cropped: X_batch.reshape([-1, 28, 28, 1]),
+                                                model.y: y_batch})
 
-				loss_train_ep.append(loss_batch_train)
+                loss_val_ep.append(loss_batch_val)
+                acc_val_ep.append(acc_batch_val)
 
-			loss_train = np.mean(loss_train_ep)
+                print("\rValidation {}/{} {:.1f}%".format(it, n_iter_valid_per_epoch, 100.0 * it / n_iter_valid_per_epoch), end=" "*30)
 
-			loss_val_ep = []
-			acc_val_ep  = []
+            loss_val = np.mean(loss_val_ep)
+            acc_val  = np.mean(acc_val_ep)
 
-			for it in range(1, n_iter_valid_per_epoch + 1):
-				X_batch, y_batch = mnist.validation.next_batch(batch_size)
-				loss_batch_val, acc_batch_val = sess.run(
-								[model.batch_loss, model.accuracy],
-								feed_dict = {	model.X: X_batch.reshape([-1, 28, 28, 1]),
-												model.y: y_batch})
+            print("\repoch: {} loss_train: {:.5f}, loss_val: {:.5f}, train_acc: {:.4f}%, valid_acc: {:.4f}% {}".format(
+                epoch + 1, loss_train, loss_val, acc_train * 100.0, acc_val * 100.0, "(improved)" if loss_val < best_loss_val else ""))
 
-				loss_val_ep.append(loss_batch_val)
-				acc_val_ep.append(acc_batch_val)
+            if loss_val < best_loss_val:
+                saver.save(sess, checkpoint_file)
+                best_loss_val = loss_val
 
-				print("\rValidation ({:.1f}%)".format(100.0 * it / n_iter_valid_per_epoch), end=" "*30)
-
-			loss_val = np.mean(loss_val_ep)
-			acc_val  = np.mean(acc_val_ep)
-
-			print("\repoch: {} loss_train: {:.5f}, loss_val: {:.5f}, valid_accuracy: {:.4f}% {}".format(
-						epoch + 1, loss_train, loss_val, acc_val * 100.0, "(improved)" if loss_val < best_loss_val else ""))
-
-			if loss_val < best_loss_val:
-				save_file = saver.save(sess, checkpoint_file)
-				best_loss_val = loss_val
-
-		writer.close()
+        writer.close()
 
 def test(model):
-	checkpoint_file = './capsnet'
-	saver = tf.train.Saver()
+	batch_size = 100
+
 	n_iter_test_per_epoch = mnist.test.num_examples // batch_size
 
 	loss_test_ep = []
 	acc_test_ep  = []
 
 	with tf.Session() as sess:
-		saver.restore(sess, checkpoint_file)
-
+		saver = tf.train.import_meta_graph(checkpoint_file +'.meta')
+		saver.restore(sess, tf.train.latest_checkpoint('tmp/'))
+		#saver.restore(sess, 'tmp/model.ckpt.data-1000-00000-of-00001')
+		l = tf.get_default_graph().get_operations()
+		print(len(l))
 		print('\n\nTest\n')
 		for it in range(1, n_iter_test_per_epoch + 1):
 			X_batch, y_batch = mnist.test.next_batch(batch_size)
 			loss_batch_test, acc_batch_test = sess.run(
 								[model.batch_loss, model.accuracy],
-								feed_dict = {	model.X: X_batch.reshape([-1, 28, 28, 1]),
-												model.y: y_batch})
+								feed_dict = {	model.X_cropped: X_batch.reshape([-1, 28, 28, 1]),
+												model.y: y_batch,
+												model.reconstruction: False})
 
 			loss_test_ep.append(loss_batch_test)
 			acc_test_ep.append(acc_batch_test)
-			print("\rTesting .. ({:.1f}%)".format(100.0 * it / n_iter_test_per_epoch), end=" "*30)	
+			print("\rTesting {}/{} {:.1f}%".format(it, n_iter_test_per_epoch, 100.0 * it / n_iter_test_per_epoch), end=" "*30)	
 
 		loss_test = np.mean(loss_test_ep)
 		acc_test  = np.mean(acc_test_ep)
@@ -107,13 +109,11 @@ def test(model):
 		print("\r(Testing) accuracy: {:.3f}%, loss: {:.4f}".format(acc_test*100.0, loss_test))
 
 def reconstruction(model, num_samples):
-	checkpoint_file = './capsnet'
-	saver = tf.train.Saver()
-
 	samples_imgs = mnist.test.images[:num_samples].reshape([-1, 28, 28, 1])
 
 	with tf.Session() as sess:
-		saver.restore(sess, checkpoint_file)
+		saver = tf.train.import_meta_graph(checkpoint_file +'.meta')
+		saver.restore(sess, tf.train.latest_checkpoint('tmp/'))
 
 		decoder_output, y_pred_value = sess.run(
 			[model.decoder_output, model.y_pred],
@@ -140,9 +140,10 @@ def reconstruction(model, num_samples):
 		plt.axis("off")
 
 	plt.show()
+
 if __name__ == '__main__':
 
 	model = CapsNet(rounds = 3)
-	#train(model, False)
-	test(model)
+	train(model, False, 50)
+	#test(model)
 	#reconstruction(model, 5)

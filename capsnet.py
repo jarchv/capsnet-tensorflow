@@ -29,12 +29,12 @@ class CapsNet:
     self.X_pad     = tf.image.resize_image_with_crop_or_pad(self.X, 32, 32)
     self.X_cropped = tf.random_crop(self.X_pad, [tf.shape(self.X)[0], 28, 28, 1])
 		
-    self.Conv1 		 = caps('conv2d').layer(inputs      = self.X_cropped,
-                                          filters     = 256, 
-                                          kernel_size = 9, 
-                                          activation  = tf.nn.relu,
-                                          name        = 'Conv1'
-                                          )
+    self.Conv1 = caps('conv2d').layer(inputs      = self.X_cropped,
+                                      filters     = 256, 
+                                      kernel_size = 9, 
+                                      activation  = tf.nn.relu,
+                                      name        = 'Conv1'
+                                      )
 
     self.PrimaryCaps = caps('primary').layer(inputs     = self.Conv1,
                                             kernel_size = 9,
@@ -69,7 +69,7 @@ class CapsNet:
 
   def safe_length(self, v_j, axis, epsilon = 1e-9, keepdims = False, name = None):
     with tf.variable_scope('safe_lenght'):
-      v_j_squared =  tf.reduce_sum(	tf.square(v_j), 
+      v_j_squared = tf.reduce_sum(tf.square(v_j), 
                       axis      = axis,
                       keepdims  = keepdims)
       return tf.sqrt(v_j_squared + epsilon, name = 'v_j_length')
@@ -96,8 +96,8 @@ class CapsNet:
     self.reconstruction = tf.placeholder_with_default(False, shape = (), name = 'label_mask')		
     self.label_to_mask  = tf.cond(self.reconstruction, lambda: self.y, lambda: self.y_pred, name = 'label_to_mask')
 
-    self.mask 				= tf.one_hot(self.label_to_mask, depth = self.classes, name = 'mask')
-    self.mask_reshaped  	= tf.reshape(self.mask, shape = [-1, 1, self.classes, 1, 1])
+    self.mask = tf.one_hot(self.label_to_mask, depth = self.classes, name = 'mask')
+    self.mask_reshaped = tf.reshape(self.mask, shape = [-1, 1, self.classes, 1, 1])
 
     self.caps_output_masked = tf.multiply(self.DigitCaps, self.mask_reshaped, name = 'caps_output_masked') # [?, 1, 16, 10, 1]
     self.decoder_input = tf.reshape(self.caps_output_masked, shape = [-1, self.classes * self.DigitCaps.shape[-2].value]) # [?, 160]
@@ -114,7 +114,7 @@ class CapsNet:
                             name        = 'fc2')
 
       self.decoder_output = tf.layers.dense(inputs      = fc2,
-													                  units       = 784,
+                                            units       = 784,
                                             activation  = tf.nn.sigmoid,
                                             name        = 'decoder_output')
 

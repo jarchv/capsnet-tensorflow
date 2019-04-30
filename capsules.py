@@ -109,7 +109,7 @@ class CapsNet:
 		#print('u_ji_stopped: ', u_ji_stopped.shape)
 		for round_it in range(1, self.rounds + 1):
 			with tf.variable_scope('round_' + str(round_it)):
-				coupling_coeff = tf.nn.softmax(routing_logits) # [?,1152,10,1,1]
+				coupling_coeff = tf.nn.softmax(routing_logits, axis=2) # [?,1152,10,1,1]
 
 				if round_it == self.rounds:
 					# "For all but the first layer of capsules, the total input to a capsule s_j is a weighted sum over all

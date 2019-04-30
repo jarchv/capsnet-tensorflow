@@ -5,41 +5,41 @@ class CapsNet:
 	  self.mode = mode
 
   def layer(self,
-            inputs = None, 
-            filters = None,
+            inputs      = None, 
+            filters     = None,
             kernel_size = 9,
-            strides 	= (1, 1),
-            padding 	= 'valid',
-            activation 	= None,
-            use_bias 	= True,
+            strides     = (1, 1),
+            padding     = 'valid',
+            activation  = None,
+            use_bias    = True,
             trainable 	= True,
             caps_units 	= None, 
-            caps_dim 	= None,
-            rounds 		= 3,
+            caps_dim    = None,
+            rounds      = 3,
             name        = None):
 
   if self.mode == 'conv2d':
-      output = tf.layers.conv2d(inputs 		= inputs,
-                                filters 	= filters,
+      output = tf.layers.conv2d(inputs      = inputs,
+                                filters     = filters,
                                 kernel_size = kernel_size,
-                                strides		= strides,
-                                padding 	= padding,
-                                activation	= activation,
-                                use_bias	= use_bias,
-                                trainable 	= trainable,
-                                name 		= name
+                                strides     = strides,
+                                padding     = padding,
+                                activation  = activation,
+                                use_bias    = use_bias,
+                                trainable   = trainable,
+                                name        = name
                                 )
 
     elif self.mode == 'primary':
-      conv  =  tf.layers.conv2d(	inputs 		= inputs,
-                    filters 	= caps_units * caps_dim,
-                    kernel_size = kernel_size,
-                    strides		= strides,
-                    padding 	= padding,
-                    activation	= activation,
-                    use_bias	= use_bias,
-                    trainable 	= trainable,
-                    name 		= name)
+      conv  =  tf.layers.conv2d(inputs      = inputs,
+                                filters     = caps_units * caps_dim,
+                                kernel_size = kernel_size,
+                                strides     = strides,
+                                padding     = padding,
+                                activation  = activation,
+                                use_bias    = use_bias,
+                                trainable   = trainable,
+                                name        = name)
 
       grid_dim  = conv.shape[-2].value
       assert (grid_dim == conv.shape[-3].value)
@@ -56,17 +56,17 @@ class CapsNet:
 
         self.caps_units = caps_units
         self.caps_dim   = caps_dim
-        self.rounds		= rounds
+        self.rounds     = rounds
 
         with tf.variable_scope('routing'):
-          batch_size 		= tf.shape(inputs)[0]
+          batch_size = tf.shape(inputs)[0]
 					
           # "Initial logits b_ij are the log prior probabilities that capsule i shoould be coupled to capsule j"
           # b_ij => [#Capsules_i, #Capsules_j] :[1152x10]
 					
-          routing_logits 	= tf.zeros(shape = [batch_size, inputs.shape[1], caps_units, 1, 1], 
-                        dtype = tf.float32, 
-                        name  = 'rouring_logits') # [?, 1152, 10, 1, 1]
+          routing_logits = tf.zeros(shape = [batch_size, inputs.shape[1], caps_units, 1, 1], 
+                                    dtype = tf.float32, 
+                                    name  = 'rouring_logits') # [?, 1152, 10, 1, 1]
 
           output = self.routing(inputs_tile, routing_logits, inputs.shape.as_list())
 
@@ -89,7 +89,7 @@ class CapsNet:
 		
     W = tf.Variable(W_init, name = 'W') #[1, 1152, 160, 8, 1]
     biases = tf.get_variable(name = 'biases', 
-														shape = (1, 1, self.caps_units, self.caps_dim, 1)) # [?, 1, 10, 16, 1]
+                            shape = (1, 1, self.caps_units, self.caps_dim, 1)) # [?, 1, 10, 16, 1]
 	
     inputs_tiled = tf.tile(inputs_tile, [1, 1, self.caps_units * self.caps_dim, 1, 1], 
                             name = 'inputs_tiled') # [?, 1152, 160, 8, 1]

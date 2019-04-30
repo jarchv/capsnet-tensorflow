@@ -18,7 +18,7 @@ class CapsNet:
             rounds      = 3,
             name        = None):
 
-  if self.mode == 'conv2d':
+    if self.mode == 'conv2d':
       output = tf.layers.conv2d(inputs      = inputs,
                                 filters     = filters,
                                 kernel_size = kernel_size,

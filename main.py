@@ -78,13 +78,21 @@ def train(model, restore = False, n_epochs = 50):
                 loss_val_ep.append(loss_batch_val)
                 acc_val_ep.append(acc_batch_val)
 
-                print("\rValidation {}/{} {:.1f}%".format(it, n_iter_valid_per_epoch, 100.0 * it / n_iter_valid_per_epoch), end=" "*30)
+                print("\rValidation {}/{} {:.1f}%".format(it, 
+						n_iter_valid_per_epoch, 
+						100.0 * it / n_iter_valid_per_epoch), 
+						end=" "*30)
 
             loss_val = np.mean(loss_val_ep)
             acc_val  = np.mean(acc_val_ep)
 
             print("\repoch: {} loss_train: {:.5f}, loss_val: {:.5f}, train_acc: {:.4f}%, valid_acc: {:.4f}% {}".format(
-                epoch + 1, loss_train, loss_val, acc_train * 100.0, acc_val * 100.0, "(improved)" if loss_val < best_loss_val else ""))
+                epoch + 1, 
+				loss_train, 
+				loss_val, 
+				acc_train * 100.0, 
+				acc_val * 100.0, 
+				"(improved)" if loss_val < best_loss_val else ""))
 
             if loss_val < best_loss_val:
                 saver.save(sess, checkpoint_file)
@@ -103,21 +111,22 @@ def test(model):
 	with tf.Session() as sess:
 		saver = tf.train.import_meta_graph(checkpoint_file +'.meta')
 		saver.restore(sess, tf.train.latest_checkpoint('tmp/'))
-		#saver.restore(sess, 'tmp/model.ckpt.data-1000-00000-of-00001')
-		l = tf.get_default_graph().get_operations()
-		print(len(l))
+
 		print('\n\nTest\n')
 		for it in range(1, n_iter_test_per_epoch + 1):
 			X_batch, y_batch = mnist.test.next_batch(batch_size)
 			loss_batch_test, acc_batch_test = sess.run(
 								[model.batch_loss, model.accuracy],
 								feed_dict = { model.X_cropped: X_batch.reshape([-1, 28, 28, 1]),
-															model.y: y_batch,
-															model.reconstruction: False})
+									model.y: y_batch,
+									model.reconstruction: False})
 
 			loss_test_ep.append(loss_batch_test)
 			acc_test_ep.append(acc_batch_test)
-			print("\rTesting {}/{} {:.1f}%".format(it, n_iter_test_per_epoch, 100.0 * it / n_iter_test_per_epoch), end=" "*30)	
+			print("\rTesting {}/{} {:.1f}%".format(it, 
+											n_iter_test_per_epoch, 
+											100.0 * it / n_iter_test_per_epoch), 
+											end=" "*30)	
 
 		loss_test = np.mean(loss_test_ep)
 		acc_test  = np.mean(acc_test_ep)
@@ -133,8 +142,8 @@ def reconstruction(model, num_samples):
 
 		decoder_output, y_pred_value = sess.run(
 			[model.decoder_output, model.y_pred],
-			feed_dict = {	model.X: samples_imgs,
-										model.y: np.array([], dtype = np.int64)})
+			feed_dict = {model.X: samples_imgs,
+						model.y: np.array([], dtype = np.int64)})
 
 
 	samples_imgs = samples_imgs.reshape([-1, 28, 28])

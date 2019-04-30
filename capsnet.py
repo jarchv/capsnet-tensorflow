@@ -7,9 +7,9 @@ class CapsNet:
 									classes = 10, 
 									m_plus  = 0.9,
 									m_minus = 0.1,
-									lambda_ = 0.5,
+									lambda_ = 0.5,   
 									alpha   = 0.0005,
-									rounds  = 3) :
+									rounds  = 3) :  				
 
 		self.X = tf.placeholder(shape = [None, 28, 28, 1], 
 														dtype = tf.float32, 

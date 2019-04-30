@@ -2,4 +2,5 @@ MNIST_data
 __pycache__
 tmp
 .ipynb_checkpoints
+.vscode
 output

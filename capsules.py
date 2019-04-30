@@ -6,10 +6,10 @@ class CapsNet:
 		self.mode = mode
 
 	def layer(self,
-						inputs = None, 
-						filters = None,
-						kernel_size = 9,
-						strides 	= (1, 1),
+            inputs = None, 
+            filters = None,
+            kernel_size = 9,
+            strides 	= (1, 1),
 						padding 	= 'valid',
 						activation 	= None,
 						use_bias 	= True,

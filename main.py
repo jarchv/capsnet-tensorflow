@@ -143,7 +143,8 @@ def reconstruction(model, num_samples):
 		decoder_output, y_pred_value = sess.run(
 			[model.decoder_output, model.y_pred],
 			feed_dict = {model.X: samples_imgs,
-						model.y: np.array([], dtype = np.int64)})
+						       model.y: np.array([], dtype = np.int64),
+                   model.reconstruction: False})
 
 
 	samples_imgs = samples_imgs.reshape([-1, 28, 28])
@@ -169,6 +170,6 @@ def reconstruction(model, num_samples):
 if __name__ == '__main__':
 
 	model = CapsNet(rounds = 3)
-	train(model, False, 50)
+	train(model, False, 1)
 	#test(model)
 	#reconstruction(model, 5)

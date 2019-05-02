@@ -3,7 +3,7 @@ import tensorflow as tf
 class CapsNet:
   def __init__(	self, mode = 'conv'):
 	  self.mode = mode
-
+    
   def layer(self,
             inputs      = None, 
             filters     = None,
@@ -124,7 +124,9 @@ class CapsNet:
           v_j = self.squash(s_j) # [?,1,10,16,1]
 
           v_j_tiled = tf.tile(v_j, [1, u_ji_stopped.shape[1].value, 1, 1, 1]) # [?,1152,10,16,1]
-          agreement = tf.reduce_sum(u_ji_stopped * v_j, axis = 3, keepdims = True) # [?,1152,10,1,1]
+
+          u_ji_dot_v_j = tf.multiply(v_j, u_ji_stopped, name = 'u_ji_dot_v_j') # [?,1152,10,16,1]
+          agreement    = tf.reduce_sum(u_ji_dot_v_j, axis = 3, keepdims = True) # [?,1152,10,1,1]
 					
           routing_logits += agreement
 		

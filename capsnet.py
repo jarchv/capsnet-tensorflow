@@ -55,7 +55,8 @@ class CapsNet:
                                                     )
 
     self.v_j_length = self.get_length(self.digcaps_output, axis = -2) # [?, 1, 10, 1]
-    self.y = tf.placeholder(dtype=tf.int64, shape = [None], name = 'y')
+    self.y = tf.placeholder_with_default(np.array([-1], dtype=np.int64), shape = [None], name = 'y')
+    #self.y = tf.placeholder(dtype=tf.int64, shape = [None], name = 'y')
 
     with tf.variable_scope('Masking'):
       self.batch_loss = self.margin_loss() + self.reconstruction_loss() * self.alpha	
@@ -66,7 +67,7 @@ class CapsNet:
 
     with tf.variable_scope('Train'):
       global_step = tf.Variable(0, trainable=False)
-      self.optimizer = tf.train.AdamOptimizer(learning_rate=0.0001)
+      self.optimizer = tf.train.AdamOptimizer(learning_rate=0.001)
       self.train_op  = self.optimizer.minimize(self.batch_loss, global_step=global_step, name = 'train_op')
 
   def get_length(self, v_j, axis, keepdims = False, name = None):
@@ -101,7 +102,6 @@ class CapsNet:
     self.caps_output_masked = tf.multiply(self.digcaps_output, self.mask_reshaped, name = 'caps_output_masked') # [?, 1, 16, 10, 1]
     self.decoder_input = tf.reshape(self.caps_output_masked, shape = [-1, self.classes * self.digcaps_output.shape[-2].value]) # [?, 160]
 
-    print('decoder_input :', self.decoder_input.shape)
     with tf.name_scope('Decoder'):
       fc1 = tf.layers.dense(inputs     = self.decoder_input, 
                             units      = 512,
@@ -121,6 +121,7 @@ class CapsNet:
     self.flatten_X = tf.reshape(self.X_cropped, shape = [-1, 784], name = 'flatten_X')
 
     self.squared_diff = tf.square(self.flatten_X - self.decoder_output, name = 'squared_diff')
-    self.reconstruction_batch_loss = tf.reduce_mean(self.squared_diff , name = 'reconstruction_loss')
+    self.reconstruction_loss = tf.reduce_sum(self.squared_diff , name = 'reconstruction_loss', axis=-1)
+    self.reconstruction_batch_loss = tf.reduce_mean(self.reconstruction_loss, name = 'reconstruction_batch_loss')
 
     return self.reconstruction_batch_loss

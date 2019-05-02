@@ -125,8 +125,8 @@ class CapsNet:
 
           v_j_tiled = tf.tile(v_j, [1, u_ji_stopped.shape[1].value, 1, 1, 1]) # [?,1152,10,16,1]
 
-          u_ji_dot_v_j = tf.multiply(v_j, u_ji_stopped, name = 'u_ji_dot_v_j') # [?,1152,10,16,1]
-          agreement    = tf.reduce_sum(u_ji_dot_v_j, axis = 3, keepdims = True) # [?,1152,10,1,1]
+          a_ij = tf.multiply(v_j, u_ji_stopped, name = 'a_ij') # [?,1152,10,16,1]
+          agreement    = tf.reduce_sum(a_ij, axis = 3, keepdims = True) # [?,1152,10,1,1]
 					
           routing_logits += agreement
 		

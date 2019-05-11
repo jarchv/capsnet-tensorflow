@@ -167,7 +167,7 @@ def reconstruction(model, num_samples):
 
 if __name__ == '__main__':
 
-	model = CapsNet(rounds = 3, batch_size = batch_size)
+	model = CapsNet(rounds = 3)
 	train(model, False, 50)
 	#test(model)
 	#reconstruction(model, 5)

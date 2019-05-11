@@ -11,7 +11,6 @@ class CapsNet:
               m_minus = 0.1,
               lambda_ = 0.5,   
               alpha   = 0.0005,
-              batch_size = 100,
               rounds  = 3) :  				
 
     self.X = tf.placeholder(shape = [None, 28, 28, 1], 
@@ -24,56 +23,61 @@ class CapsNet:
     self.lambda_ = lambda_
     self.alpha   = alpha
     self.rounds  = rounds
-    self.batch_size = batch_size
     self.build_model()
 
   def build_model(self):
     self.X_pad     = tf.image.resize_image_with_crop_or_pad(self.X, 32, 32)
     self.X_cropped = tf.random_crop(self.X_pad, [tf.shape(self.X)[0], 28, 28, 1])
 		
-    self.conv1_output   = caps(mode = 'conv2d').layer(inputs      = self.X_cropped,
-                                                      filters     = 256, 
-                                                      kernel_size = 9, 
-                                                      activation  = tf.nn.relu,
-                                                      name        = 'Conv1'
-                                                      )
+    with tf.name_scope('Conv1'):
+      self.conv1_output   = caps(mode = 'conv2d').layer(inputs      = self.X_cropped,
+                                                        filters     = 256, 
+                                                        kernel_size = 9, 
+                                                        activation  = tf.nn.relu,
+                                                        name        = 'Conv1'
+                                                        )
 
-    self.prycaps_output = caps(mode = 'primary').layer(inputs     = self.conv1_output,
-                                                      kernel_size = 9,
-                                                      strides     = 2,
-                                                      activation  = tf.nn.relu,
-                                                      caps_units  = 32,
-                                                      caps_dim    = 8,
-                                                      name        = 'PrimaryCaps'
-                                                      )
+    with tf.name_scope('PrimaryCapsule'):
+      self.prycaps_output = caps(mode = 'primary').layer(inputs     = self.conv1_output,
+                                                        kernel_size = 9,
+                                                        strides     = 2,
+                                                        activation  = tf.nn.relu,
+                                                        caps_units  = 32,
+                                                        caps_dim    = 8,
+                                                        name        = 'PrimaryCaps'
+                                                        )
     
     # digcaps_output : [?, 10, 16]
-    self.digcaps_output = caps(mode = 'digit').layer(inputs     = self.prycaps_output,
-                                                    caps_units  = self.classes,
-                                                    caps_dim    = 16,
-                                                    rounds      = self.rounds,
-                                                    batch_size  = self.batch_size,
-                                                    name        = 'DigitCaps'
-                                                    )
+    with tf.name_scope('DigitCapsule'):
+      self.digcaps_output = caps(mode = 'digit').layer(inputs     = self.prycaps_output,
+                                                      caps_units  = self.classes,
+                                                      caps_dim    = 16,
+                                                      rounds      = self.rounds,
+                                                      name        = 'DigitCaps'
+                                                      )
 
-    self.v_j_length = self.get_length(self.digcaps_output, axis = -1) # [?, 10]
-    self.y = tf.placeholder_with_default(np.array([-1], dtype=np.int64), shape = [None], name = 'y')
-    #self.y = tf.placeholder(dtype=tf.int64, shape = [None], name = 'y')
+    with tf.name_scope('Masking'):
+      self.v_j_length = self.get_length(self.digcaps_output, axis = -1) # [?, 10]
+      self.y = tf.placeholder_with_default(np.array([-1], dtype=np.int64), shape = [None], name = 'y')
+      
+      with tf.variable_scope('Masking'):
+        self.batch_sum_loss_rec = self.reconstruction_loss()
 
-    with tf.variable_scope('Masking'):
-      self.batch_loss = self.margin_loss() + self.reconstruction_loss() * self.alpha	
+    with tf.name_scope('Total_Loss'):
+      self.batch_loss = self.margin_loss() + self.batch_sum_loss_rec * self.alpha	
 
     with tf.variable_scope('Accuracy'):
       self.accuracy = tf.reduce_mean(tf.cast(tf.equal(self.y, self.y_pred), tf.float32), 
                                     name = 'accuracy_mean')
 
-    with tf.variable_scope('Train'):
-      global_step = tf.Variable(0, trainable=False)
-      self.optimizer = tf.train.AdamOptimizer(learning_rate=0.001)
-      self.train_op  = self.optimizer.minimize(self.batch_loss, global_step=global_step, name = 'train_op')
+    with tf.name_scope('Training'):
+      with tf.variable_scope('Train'):
+        global_step = tf.Variable(0, trainable=False)
+        self.optimizer = tf.train.AdamOptimizer(learning_rate=0.001)
+        self.train_op  = self.optimizer.minimize(self.batch_loss, global_step=global_step, name = 'train_op')
 
   def get_length(self, v_j, axis = -1, keepdims = False, name = None):
-    with tf.variable_scope('safe_lenght'):
+    with tf.variable_scope('lenght'):
       v_j_squared = tf.reduce_sum(tf.square(v_j), 
                       axis      = axis,
                       keepdims  = keepdims)

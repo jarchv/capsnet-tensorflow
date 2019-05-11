@@ -78,7 +78,7 @@ class CapsNet:
 
   def get_length(self, v_j, axis = -1, keepdims = False, name = None):
     with tf.variable_scope('lenght'):
-      v_j_squared = tf.reduce_sum(tf.square(v_j), 
+      v_j_squared = tf.reduce_sum(tf.square(v_j) + 1e-7, 
                       axis      = axis,
                       keepdims  = keepdims)
       return tf.sqrt(v_j_squared, name = 'v_j_length')

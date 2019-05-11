@@ -101,8 +101,6 @@ def train(model, restore = False, n_epochs = 50):
         writer.close()
 
 def test(model):
-	batch_size = 10
-
 	n_iter_test_per_epoch = mnist.test.num_examples // batch_size
 
 	loss_test_ep = []

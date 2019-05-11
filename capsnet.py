@@ -72,8 +72,14 @@ class CapsNet:
 
     with tf.name_scope('Training'):
       with tf.variable_scope('Train'):
+        starter_learning_rate = 0.001
         global_step = tf.Variable(0, trainable=False)
-        self.optimizer = tf.train.AdamOptimizer(learning_rate=0.001)
+        learning_rate = tf.train.exponential_decay(starter_learning_rate, global_step,
+                                           1.0, 0.9, staircase=True)
+
+        # decayed_learning_rate = learning_rate * decay_rate ^ (global_step / decay_steps)
+        # decayed_learning_rate = 0.001 * 0.9 ^ (global_step / 1.0)
+        self.optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
         self.train_op  = self.optimizer.minimize(self.batch_loss, global_step=global_step, name = 'train_op')
 
   def get_length(self, v_j, axis = -1, keepdims = False, name = None):

@@ -17,7 +17,7 @@ from capsnet import CapsNet
 from tensorflow.examples.tutorials.mnist import input_data
 
 mnist = input_data.read_data_sets('MNIST_data/')
-batch_size = 32
+batch_size = 25
 
 tf.reset_default_graph()
 
@@ -101,7 +101,7 @@ def train(model, restore = False, n_epochs = 50):
         writer.close()
 
 def test(model):
-	batch_size = 100
+	batch_size = 10
 
 	n_iter_test_per_epoch = mnist.test.num_examples // batch_size
 
@@ -169,7 +169,7 @@ def reconstruction(model, num_samples):
 
 if __name__ == '__main__':
 
-	model = CapsNet(rounds = 3)
+	model = CapsNet(rounds = 3, batch_size = batch_size)
 	train(model, False, 50)
 	#test(model)
 	#reconstruction(model, 5)

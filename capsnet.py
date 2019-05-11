@@ -11,6 +11,7 @@ class CapsNet:
               m_minus = 0.1,
               lambda_ = 0.5,   
               alpha   = 0.0005,
+              batch_size = 100,
               rounds  = 3) :  				
 
     self.X = tf.placeholder(shape = [None, 28, 28, 1], 
@@ -23,7 +24,7 @@ class CapsNet:
     self.lambda_ = lambda_
     self.alpha   = alpha
     self.rounds  = rounds
-
+    self.batch_size = batch_size
     self.build_model()
 
   def build_model(self):
@@ -46,15 +47,16 @@ class CapsNet:
                                                       name        = 'PrimaryCaps'
                                                       )
     
-    # digcaps_output : [?, 1, 10, 16]
+    # digcaps_output : [?, 10, 16]
     self.digcaps_output = caps(mode = 'digit').layer(inputs     = self.prycaps_output,
                                                     caps_units  = self.classes,
                                                     caps_dim    = 16,
                                                     rounds      = self.rounds,
+                                                    batch_size  = self.batch_size,
                                                     name        = 'DigitCaps'
                                                     )
 
-    self.v_j_length = self.get_length(self.digcaps_output, axis = -1) # [?, 1, 10]
+    self.v_j_length = self.get_length(self.digcaps_output, axis = -1) # [?, 10]
     self.y = tf.placeholder_with_default(np.array([-1], dtype=np.int64), shape = [None], name = 'y')
     #self.y = tf.placeholder(dtype=tf.int64, shape = [None], name = 'y')
 
@@ -90,18 +92,17 @@ class CapsNet:
     return batch_loss
 
   def reconstruction_loss(self):
-    self.argmax_target = tf.argmax(self.v_j_length, axis = 2, name = 'argmax_target') # [?, 1]
-    self.y_pred        = tf.squeeze(self.argmax_target, name = 'y_pred') # [?,]
+    self.y_pred = tf.argmax(self.v_j_length, axis = 1, name = 'y_pred') # [?,]
 
     self.reconstruction = tf.placeholder_with_default(False, shape = (), name = 'label_mask')		
     self.label_to_mask  = tf.cond(self.reconstruction, lambda: self.y, lambda: self.y_pred, name = 'label_to_mask')
 
     self.mask = tf.one_hot(self.label_to_mask, depth = self.classes, name = 'mask')
-    self.mask_reshaped = tf.reshape(self.mask, shape = [-1, 1, self.classes, 1])
+    self.mask_reshaped = tf.reshape(self.mask, shape = [-1, self.classes, 1])
 
-    # digcaps_output.shape : [?, 1, 10, 16]
-    # mask_reshaped.shape  : [?, 1, 10,  1]
-    self.caps_output_masked = tf.multiply(self.digcaps_output, self.mask_reshaped, name = 'caps_output_masked') # [?, 1, 10, 16]
+    # digcaps_output.shape : [?, 10, 16]
+    # mask_reshaped.shape  : [?, 10,  1]
+    self.caps_output_masked = tf.multiply(self.digcaps_output, self.mask_reshaped, name = 'caps_output_masked') # [?, 10, 16]
     self.decoder_input = tf.reshape(self.caps_output_masked, shape = [-1, self.classes * self.digcaps_output.shape[-1].value]) # [?, 160]
 
     #print("self.digcaps_output : ", self.digcaps_output.shape)

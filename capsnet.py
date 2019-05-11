@@ -75,7 +75,7 @@ class CapsNet:
         starter_learning_rate = 0.001
         global_step = tf.Variable(0, trainable=False)
         learning_rate = tf.train.exponential_decay(starter_learning_rate, global_step,
-                                           1.0, 0.9, staircase=True)
+                                           550, 0.95, staircase=True)
 
         # decayed_learning_rate = learning_rate * decay_rate ^ (global_step / decay_steps)
         # decayed_learning_rate = 0.001 * 0.9 ^ (global_step / 1.0)
@@ -84,10 +84,10 @@ class CapsNet:
 
   def get_length(self, v_j, axis = -1, keepdims = False, name = None):
     with tf.variable_scope('lenght'):
-      v_j_squared = tf.reduce_sum(tf.square(v_j) + 1e-7, 
+      v_j_squared = tf.reduce_sum(tf.square(v_j), 
                       axis      = axis,
                       keepdims  = keepdims)
-      return tf.sqrt(v_j_squared, name = 'v_j_length')
+      return tf.sqrt(v_j_squared + 1e-7, name = 'v_j_length')
 
   def margin_loss(self):
     self.present_e  = tf.square(tf.maximum(0.0,  self.m_plus  - tf.reshape(self.v_j_length, [-1, self.classes])),  name = 'present_error')

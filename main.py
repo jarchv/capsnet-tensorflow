@@ -17,7 +17,7 @@ from capsnet import CapsNet
 from tensorflow.examples.tutorials.mnist import input_data
 
 mnist = input_data.read_data_sets('MNIST_data/')
-batch_size = 25
+batch_size = 10
 
 tf.reset_default_graph()
 
@@ -27,15 +27,15 @@ np.random.seed(0)
 checkpoint_file = './tmp/model.ckpt'
 
 def train(model, restore = False, n_epochs = 50):
-    init = tf.global_variables_initializer()	
+    init = tf.global_variables_initializer()
 
     n_iter_train_per_epoch = mnist.train.num_examples // batch_size
     n_iter_valid_per_epoch = mnist.validation.num_examples // batch_size
 
     best_loss_val = np.infty
-    
+
     saver = tf.train.Saver()
-    
+
     with tf.Session() as sess:
         writer = tf.summary.FileWriter("output", sess.graph)
 
@@ -64,7 +64,7 @@ def train(model, restore = False, n_epochs = 50):
                 acc_train_ep.append(acc_batch_train)
             loss_train = np.mean(loss_train_ep)
             acc_train = np.mean(acc_train_ep)
-            
+
             loss_val_ep = []
             acc_val_ep  = []
 
@@ -78,20 +78,20 @@ def train(model, restore = False, n_epochs = 50):
                 loss_val_ep.append(loss_batch_val)
                 acc_val_ep.append(acc_batch_val)
 
-                print("\rValidation {}/{} {:.1f}%".format(it, 
-						n_iter_valid_per_epoch, 
-						100.0 * it / n_iter_valid_per_epoch), 
+                print("\rValidation {}/{} {:.1f}%".format(it,
+						n_iter_valid_per_epoch,
+						100.0 * it / n_iter_valid_per_epoch),
 						end=" "*30)
 
             loss_val = np.mean(loss_val_ep)
             acc_val  = np.mean(acc_val_ep)
 
             print("\repoch: {} loss_train: {:.5f}, loss_val: {:.5f}, train_acc: {:.4f}%, valid_acc: {:.4f}% {}".format(
-                epoch + 1, 
-				loss_train, 
-				loss_val, 
-				acc_train * 100.0, 
-				acc_val * 100.0, 
+                epoch + 1,
+				loss_train,
+				loss_val,
+				acc_train * 100.0,
+				acc_val * 100.0,
 				"(improved)" if loss_val < best_loss_val else ""))
 
             if loss_val < best_loss_val:
@@ -121,10 +121,10 @@ def test(model):
 
 			loss_test_ep.append(loss_batch_test)
 			acc_test_ep.append(acc_batch_test)
-			print("\rTesting {}/{} {:.1f}%".format(it, 
-											n_iter_test_per_epoch, 
-											100.0 * it / n_iter_test_per_epoch), 
-											end=" "*30)	
+			print("\rTesting {}/{} {:.1f}%".format(it,
+											n_iter_test_per_epoch,
+											100.0 * it / n_iter_test_per_epoch),
+											end=" "*30)
 
 		loss_test = np.mean(loss_test_ep)
 		acc_test  = np.mean(acc_test_ep)
@@ -146,7 +146,7 @@ def reconstruction(model, num_samples):
 
 
 	samples_imgs = samples_imgs.reshape([-1, 28, 28])
-	reconstructions_imgs = decoder_output.reshape([-1, 28, 28])	
+	reconstructions_imgs = decoder_output.reshape([-1, 28, 28])
 
 	plt.figure(figsize = (num_samples * 2, 4))
 

@@ -3,9 +3,9 @@ import tensorflow as tf
 class CapsNet:
   def __init__(	self, mode = 'conv'):
 	  self.mode = mode
-    
+
   def layer(self,
-            inputs      = None, 
+            inputs      = None,
             filters     = None,
             kernel_size = 9,
             strides     = (1, 1),
@@ -13,7 +13,7 @@ class CapsNet:
             activation  = None,
             use_bias    = True,
             trainable 	= True,
-            caps_units 	= None, 
+            caps_units 	= None,
             caps_dim    = None,
             rounds      = 3,
             name        = None):
@@ -49,7 +49,7 @@ class CapsNet:
 
     elif self.mode == 'digit':
       # inputs.shape = [?, 1152, 8]
-      
+
       self.input_caps_units = inputs.shape[1].value
       self.input_caps_dim   = inputs.shape[2].value
 
@@ -62,37 +62,37 @@ class CapsNet:
 
         with tf.variable_scope('routing'):
           self.batch_size = tf.shape(inputs)[0]
-					
+
           # "Initial logits b_ij are the log prior probabilities that capsule i shoould be coupled to capsule j"
           # b_ij => [?, #Capsules_i, #Capsules_j] :[?, 1152, 10, 1]
-				
-          routing_logits = tf.zeros(shape = [self.batch_size, self.input_caps_units, self.caps_units, 1], 
-                                    dtype = tf.float32, 
+
+          routing_logits = tf.zeros(shape = [self.batch_size, self.input_caps_units, self.caps_units, 1],
+                                    dtype = tf.float32,
                                     name  = 'rouring_logits') # [?, 1152, 10, 1]
           output = self.routing(inputs_tile, routing_logits)
 
-    return output		
+    return output
 
   def squash(self, s, axis = -1, epsilon = 1e-7, name = 'squash'):
     with tf.name_scope(name):
       s_squared_norm  = tf.reduce_sum(tf.square(s), axis = axis, keepdims = True)
       squash_factor   = s_squared_norm / (1.0 + s_squared_norm)
       squash_unit_vec = s / tf.sqrt(s_squared_norm + epsilon)
-      
+
       return  squash_factor * squash_unit_vec
 
   def routing(self, inputs_tile, routing_logits):
-    W_init = tf.random_normal( 
+    W_init = tf.random_normal(
               shape  = (1, self.input_caps_units, self.caps_units*self.caps_dim, self.input_caps_dim), #[1, 1152, 160, 8]
-              stddev = 0.01, 
+              stddev = 0.01,
               dtype  = tf.float32,
               name   = 'W_init')
-		
+
     W = tf.Variable(W_init, name = 'W') #[1, 1152, 160, 8]
-    #biases = tf.get_variable(name = 'biases', 
+    #biases = tf.get_variable(name = 'biases',
     #                        shape = (1, self.caps_units, self.caps_dim)) # [1, 10, 16]
-	
-    inputs_tiled = tf.tile(inputs_tile, [1, 1, self.caps_units*self.caps_dim, 1], 
+
+    inputs_tiled = tf.tile(inputs_tile, [1, 1, self.caps_units*self.caps_dim, 1],
                             name = 'inputs_tiled') # [?, 1152, 160, 8]
 
     # inputs_tiled.shape = [?, 1152, 160, 8]
@@ -102,12 +102,51 @@ class CapsNet:
 
     flatten_u_ji = tf.reduce_sum(Wu, axis = 3, keepdims = True, name = 'flatten_u_ji')# [?, 1152, 160, 1]
 
-    u_ji = tf.reshape(flatten_u_ji, shape = [-1, self.input_caps_units, self.caps_units, self.caps_dim], 
+    u_ji = tf.reshape(flatten_u_ji, shape = [-1, self.input_caps_units, self.caps_units, self.caps_dim],
                                     name = 'u_ji')			#[?, 1152, 10, 16]
 
     u_ji_stopped = tf.stop_gradient(u_ji, name = 'u_ji_stopped')        # [?, 1152, 10, 16]
 
 
+    round_it = tf.constant(1)
+    cond_rnd = lambda round_it, routing_logits, u_ji_stopped: tf.less(round_it, self.rounds)
+
+    def rounting_loop(round_it, routing_logits, u_ji_stopped):
+      # coupling_coeff.shape = [?, 1152, 10, 1]
+      # u_ji_stopped.shape   = [?, 1152, 10, 16]
+      print("==>1")
+      with tf.variable_scope('rounds'):
+        coupling_coeff = tf.nn.softmax(routing_logits, axis=2) # [?, 1152, 10, 1]
+        print("==>2")
+
+        s_j = tf.multiply(coupling_coeff, u_ji_stopped) # [?, 1152, 10, 16]
+        s_j = tf.reduce_sum(s_j, axis = 1, keepdims = True, name = 's_j') # [?, 1, 10, 16]
+        v_j = self.squash(s_j, name='v_j')  # [?, 1, 10, 16]
+
+        v_j_tiled = tf.tile(v_j, [1, self.input_caps_units, 1, 1], name = 'v_j_tiled')# [1, 1152, 10, 16]
+        a_ij = tf.multiply(v_j_tiled, u_ji_stopped, name = 'a_ij') # [1, 1152, 10, 16]
+
+
+        agreement = tf.reduce_sum(a_ij, axis = 3, keepdims = True) # [?, 1152, 10, 1]
+        routing_logits += agreement
+        round_it        = tf.add(round_it, 1)
+
+      return round_it, routing_logits, u_ji_stopped
+
+
+
+    round_it, routing_logits, u_ji_stopped  = tf.while_loop(cond_rnd, rounting_loop, [round_it, routing_logits, u_ji_stopped])
+
+    coupling_coeff = tf.nn.softmax(routing_logits, axis=2) # [?, 1152, 10, 1]
+    s_j = tf.multiply(coupling_coeff, u_ji) # [?, 1152, 10, 1] . [?, 1152, 10, 16] = [?, 1152, 10, 16]
+    s_j = tf.reduce_sum(s_j, axis = 1, keepdims = True, name = 's_j')# + biases # [?, 1, 10, 16]
+    v_j = self.squash(s_j) # [?, 1, 10, 16]
+
+    v_j = tf.squeeze(v_j, axis = 1,name = 'v_j') # [?, 10, 16]
+    
+    return v_j
+
+    """
     for round_it in range(1, self.rounds + 1):
       with tf.variable_scope('round_' + str(round_it)):
         coupling_coeff = tf.nn.softmax(routing_logits, axis=2) # [?, 1152, 10, 1]
@@ -122,10 +161,10 @@ class CapsNet:
 
           v_j = tf.squeeze(v_j, axis = 1,name = 'v_j') # [?, 10, 16]
 
-            
+
         elif round_it < self.rounds:
           # coupling_coeff.shape = [?, 1152, 10, 1]
-          # u_ji_stopped_k.shape = [?, 1152, 10, 16]
+          # u_ji_stopped.shape = [?, 1152, 10, 16]
           s_j = tf.multiply(coupling_coeff, u_ji_stopped) # [?, 1152, 10, 16]
 
           # "For all but the first layer of capsules, the total input to a capsule s_j is a weighted sum over all
@@ -140,5 +179,5 @@ class CapsNet:
 
           agreement = tf.reduce_sum(a_ij, axis = 3, keepdims = True) # [?, 1152, 10, 1]
           routing_logits += agreement
-		
-    return v_j
+		"""
+    #return v_j

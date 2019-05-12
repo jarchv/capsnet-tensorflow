@@ -74,7 +74,7 @@ class CapsNet:
 
     with tf.name_scope('Training'):
       with tf.variable_scope('Train'):
-        starter_learning_rate = 0.001
+        starter_learning_rate = 0.0005
         global_step = tf.Variable(0, trainable=False)
         learning_rate = tf.train.exponential_decay(starter_learning_rate, global_step,
                                            550, 0.95, staircase=True)

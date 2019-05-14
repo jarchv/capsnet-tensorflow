@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 from capsnet import CapsNet
 
 from tensorflow.examples.tutorials.mnist import input_data
+import functools
 
 mnist = input_data.read_data_sets('MNIST_data/')
 batch_size = 10
@@ -45,6 +46,8 @@ def train(model, restore = False, n_epochs = 50):
             init.run()
 
         print('\n\nRunning CapsNet ...\n')
+
+        count_params()
         for epoch in range(n_epochs):
             loss_train_ep = []
             acc_train_ep  = []
@@ -60,6 +63,14 @@ def train(model, restore = False, n_epochs = 50):
                 print("\rIter: {}/{} [{:.1f}%] loss : {:.5f}".format(
                     it, n_iter_train_per_epoch, 100.0 * it / n_iter_train_per_epoch, loss_batch_train), end="")
 
+                plot_imgs =  sess.run(model.X_cropped, feed_dict = {model.X: X_batch.reshape([-1, 28, 28, 1])})
+
+                print(plot_imgs.shape)
+                print(X_batch[0])
+                plt.imshow(X_batch[0].reshape((28,28)), cmap='gray')
+                plt.show()
+                plt.imshow(plot_imgs[0].reshape((28,28)), cmap='gray')
+                plt.show()
                 loss_train_ep.append(loss_batch_train)
                 acc_train_ep.append(acc_batch_train)
             loss_train = np.mean(loss_train_ep)
@@ -165,9 +176,16 @@ def reconstruction(model, num_samples):
 
 	plt.show()
 
-if __name__ == '__main__':
+def count_params():
+    size = lambda v: functools.reduce(lambda x, y: x*y, v.get_shape().as_list())
+    n_trainable = sum(size(v) for v in tf.trainable_variables())
+    #n_total = sum(size(v) for v in tf.all_variables())
 
-	model = CapsNet(rounds = 3)
-	train(model, False, 50)
+    print("Model size (Trainable): {:.1f}M\n".format(n_trainable/1000000.0))
+    #print("Model size (Total): {}".format(n_total))
+
+if __name__ == '__main__':
+    model = CapsNet(rounds = 3)
+    train(model, False, 50)
 	#test(model)
 	#reconstruction(model, 5)

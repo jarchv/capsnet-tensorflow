@@ -49,31 +49,44 @@ def train(model, restore = False, n_epochs = 50):
 
         count_params()
         for epoch in range(n_epochs):
+            margin_loss_train_ep = []
+            recnst_loss_train_ep = []
             loss_train_ep = []
             acc_train_ep  = []
             for it in range(1, n_iter_train_per_epoch + 1):
                 X_batch, y_batch = mnist.train.next_batch(batch_size)
 
-                _, loss_batch_train, acc_batch_train = sess.run(
-                                [model.train_op, model.batch_loss, model.accuracy],
-                                feed_dict = {model.X: X_batch.reshape([-1, 28, 28, 1]),
-                                            model.y: y_batch,
-                                            model.reconstruction: True})
+                _, loss_batch_train, margin_loss_train, recnst_loss_train,acc_batch_train = sess.run(
+                                                    [model.train_op,
+                                                    model.margn_loss,
+                                                    model.recnst_loss_scale,
+                                                    model.batch_loss,
+                                                    model.accuracy],
+                                                    feed_dict = {model.X: X_batch.reshape([-1, 28, 28, 1]),
+                                                    model.y: y_batch,
+                                                    model.reconstruction: True})
 
                 print("\rIter: {}/{} [{:.1f}%] loss : {:.5f}".format(
                     it, n_iter_train_per_epoch, 100.0 * it / n_iter_train_per_epoch, loss_batch_train), end="")
 
                 plot_imgs =  sess.run(model.X_cropped, feed_dict = {model.X: X_batch.reshape([-1, 28, 28, 1])})
 
-                print(plot_imgs.shape)
-                print(X_batch[0])
-                plt.imshow(X_batch[0].reshape((28,28)), cmap='gray')
-                plt.show()
-                plt.imshow(plot_imgs[0].reshape((28,28)), cmap='gray')
-                plt.show()
+                #print(plot_imgs.shape)
+                #print(X_batch[0])
+                #plt.imshow(X_batch[0].reshape((28,28)), cmap='gray')
+                #plt.show()
+                #plt.imshow(plot_imgs[0].reshape((28,28)), cmap='gray')
+                #plt.show()
+
                 loss_train_ep.append(loss_batch_train)
                 acc_train_ep.append(acc_batch_train)
+                margin_loss_train_ep.append(margin_loss_train)
+                recnst_loss_train_ep.append(recnst_loss_train)
+
             loss_train = np.mean(loss_train_ep)
+            margin_loss_train = np.mean(margin_loss_train_ep)
+            recnst_loss_train = np.mean(recnst_loss_train_ep)
+
             acc_train = np.mean(acc_train_ep)
 
             loss_val_ep = []
@@ -97,9 +110,11 @@ def train(model, restore = False, n_epochs = 50):
             loss_val = np.mean(loss_val_ep)
             acc_val  = np.mean(acc_val_ep)
 
-            print("\repoch: {} loss_train: {:.5f}, loss_val: {:.5f}, train_acc: {:.4f}%, valid_acc: {:.4f}% {}".format(
+            print("\repoch: {} loss_train: {:.5f}, loss_val: {:.5f}, margin_loss: {:.5f}, recnst_loss: {:.5f}, train_acc: {:.4f}%, valid_acc: {:.4f}% {}".format(
                 epoch + 1,
 				loss_train,
+                margin_loss_train,
+                recnst_loss_train,
 				loss_val,
 				acc_train * 100.0,
 				acc_val * 100.0,
@@ -112,35 +127,38 @@ def train(model, restore = False, n_epochs = 50):
         writer.close()
 
 def test(model):
-	n_iter_test_per_epoch = mnist.test.num_examples // batch_size
+    n_iter_test_per_epoch = mnist.test.num_examples // batch_size
 
-	loss_test_ep = []
-	acc_test_ep  = []
+    loss_test_ep = []
+    acc_test_ep  = []
+    #init = tf.global_variables_initializer()
+    saver = tf.train.Saver()
+    with tf.Session() as sess:
+        #init.run()
+        #saver = tf.train.import_meta_graph(checkpoint_file +'.meta')
+        saver.restore(sess, tf.train.latest_checkpoint('tmp/'))
 
-	with tf.Session() as sess:
-		saver = tf.train.import_meta_graph(checkpoint_file +'.meta')
-		saver.restore(sess, tf.train.latest_checkpoint('tmp/'))
-
-		print('\n\nTest\n')
-		for it in range(1, n_iter_test_per_epoch + 1):
-			X_batch, y_batch = mnist.test.next_batch(batch_size)
-			loss_batch_test, acc_batch_test = sess.run(
+        #init.run()
+        print('\n\nTest\n')
+        for it in range(1, n_iter_test_per_epoch + 1):
+            X_batch, y_batch = mnist.test.next_batch(batch_size)
+            loss_batch_test, acc_batch_test = sess.run(
 								[model.batch_loss, model.accuracy],
 								feed_dict = { model.X_cropped: X_batch.reshape([-1, 28, 28, 1]),
 									model.y: y_batch,
 									model.reconstruction: False})
 
-			loss_test_ep.append(loss_batch_test)
-			acc_test_ep.append(acc_batch_test)
-			print("\rTesting {}/{} {:.1f}%".format(it,
+            loss_test_ep.append(loss_batch_test)
+            acc_test_ep.append(acc_batch_test)
+            print("\rTesting {}/{} {:.1f}%".format(it,
 											n_iter_test_per_epoch,
 											100.0 * it / n_iter_test_per_epoch),
 											end=" "*30)
 
-		loss_test = np.mean(loss_test_ep)
-		acc_test  = np.mean(acc_test_ep)
+        loss_test = np.mean(loss_test_ep)
+        acc_test  = np.mean(acc_test_ep)
 
-		print("\r(Testing) accuracy: {:.3f}%, loss: {:.4f}".format(acc_test*100.0, loss_test))
+        print("\r(Testing) accuracy: {:.3f}%, loss: {:.4f}".format(acc_test*100.0, loss_test))
 
 def reconstruction(model, num_samples):
 	samples_imgs = mnist.test.images[:num_samples].reshape([-1, 28, 28, 1])
@@ -185,7 +203,8 @@ def count_params():
     #print("Model size (Total): {}".format(n_total))
 
 if __name__ == '__main__':
+    tf.reset_default_graph()
     model = CapsNet(rounds = 3)
-    train(model, False, 50)
-	#test(model)
+    #train(model, False, 50)
+    test(model)
 	#reconstruction(model, 5)

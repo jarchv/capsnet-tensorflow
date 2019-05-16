@@ -11,19 +11,22 @@ class CapsNet:
               m_minus = 0.1,
               lambda_ = 0.5,
               alpha   = 0.0005,
-              rounds  = 3) :
-
+              rounds  = 3,
+              batch_size = 100) :
+    
     self.X = tf.placeholder(shape = [None, 28, 28, 1],
                             dtype = tf.float32,
                             name  = 'X')
 
-    self.classes = classes
-    self.m_plus  = m_plus
-    self.m_minus = m_minus
-    self.lambda_ = lambda_
-    self.alpha   = alpha
-    self.rounds  = rounds
+    self.classes  = classes
+    self.m_plus   = m_plus
+    self.m_minus  = m_minus
+    self.lambda_  = lambda_
+    self.alpha    = alpha
+    self.rounds   = rounds
+    self.bs_bydef = batch_size
     self.build_model()
+    
 
   def build_model(self):
     self.X_pad     = tf.image.resize_image_with_crop_or_pad(self.X, 32, 32)
@@ -74,13 +77,13 @@ class CapsNet:
 
     with tf.name_scope('Training'):
       with tf.variable_scope('Train'):
-        starter_learning_rate = 0.0005
+        starter_learning_rate = 0.001
         global_step = tf.Variable(0, trainable=False)
         learning_rate = tf.train.exponential_decay(starter_learning_rate, global_step,
-                                           550, 0.95, staircase=True)
+                                           55000/self.bs_bydef, 0.90, staircase=True)
 
         # decayed_learning_rate = learning_rate * decay_rate ^ (global_step / decay_steps)
-        # decayed_learning_rate = 0.001 * 0.9 ^ (global_step / 1.0)
+        # decayed_learning_rate = 0.001 * 0.99 ^ (global_step / 1.0)
         self.optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
         self.train_op  = self.optimizer.minimize(self.batch_loss, global_step=global_step, name = 'train_op')
 

@@ -4,8 +4,8 @@ A Tensorflow implementation of CapsNet based on the paper [Dynamic Routing Betwe
 
 ## Test error rate on MNIST
 
-Test error on MNIST reported by 3 trials.
+Test error on MNIST reported by 3 trials. The average and standard desviation results are reported by 3 trials.
 
-| Method  | Routing | Reconstruction | Epochs | Batch Size | Test Error(%) |     Paper   |
+| Method  | Routing | Reconstruction | Epochs | Batch Size | Test Error(%) |     Paper)  |
 |---------|---------|----------------|--------|------------|---------------|-------------|
-| CapsNet |    3    |      yes       |   50   |     100    | 0.356(0.017)  | 0.25(0.005) |
+| CapsNet |    3    |      No        |   50   |     125    | 0.343(0.012)  | 0.25(0.036) |

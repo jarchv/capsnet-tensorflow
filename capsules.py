@@ -97,11 +97,6 @@ class CapsLayer:
 
     W = tf.Variable(W_init, name = 'W')
 
-    #b_init = tf.zeros(shape = [1, self.input_caps_units, self.caps_units*self.caps_dim, 1],
-    #                  dtype = tf.float32,
-    #                  name  = 'b_init')
-
-    #biases = tf.Variable(b_init, name = 'bias')
     inputs_tiled = tf.tile(inputs_tile, [1, 1, self.caps_units*self.caps_dim, 1],
                             name = 'inputs_tiled')
 
@@ -109,7 +104,7 @@ class CapsLayer:
     # flatten_u_ji.shape = [?, 1152, 160, 1]
 
     W_dot_u = tf.multiply(inputs_tiled, W, name = 'W_dot_u')
-    flatten_u_ji = tf.reduce_sum(W_dot_u, axis = 3, keepdims = True, name = 'flatten_u_ji')# + biases
+    flatten_u_ji = tf.reduce_sum(W_dot_u, axis = 3, keepdims = True, name = 'flatten_u_ji')
 
     # u_ji.shape = [?, 1152, 10, 16]
     # u_ji_stopped.shape = [?, 1152, 10, 16]

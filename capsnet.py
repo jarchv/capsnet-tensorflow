@@ -12,7 +12,8 @@ class CapsNet:
               lambda_ = 0.5,
               alpha   = 0.0005,
               rounds  = 3,
-              batch_size = 100) :
+              batch_size = 100,
+              reconstruction_net = True) :
     
     self.X = tf.placeholder(shape = [None, 28, 28, 1],
                             dtype = tf.float32,
@@ -25,6 +26,7 @@ class CapsNet:
     self.alpha    = alpha
     self.rounds   = rounds
     self.bs_bydef = batch_size
+    self.reconstruction_net = reconstruction_net
     self.build_model()
     
 
@@ -64,17 +66,19 @@ class CapsNet:
 
 
     with tf.name_scope('Total_Loss'):
-        with tf.name_scope('Masking'):
-          self.v_j_length = self.get_length(self.digcaps_output, axis = -1) # [?, 10]
-          self.y = tf.placeholder_with_default(np.array([-1], dtype=np.int64), shape = [None], name = 'y')
-
-          with tf.variable_scope('Masking'):
-            self.recnst_loss_scale = self.reconstruction_loss() * self.alpha
-
+        self.v_j_length = self.get_length(self.digcaps_output, axis = -1) # [?, 10]
+        self.y = tf.placeholder_with_default(np.array([-1], dtype=np.int64), shape = [None], name = 'y')
+        self.y_pred = tf.argmax(self.v_j_length, axis = 1, name = 'y_pred') # [?,]
+        
         with tf.name_scope('Margin_Loss'):
             self.margn_loss = self.margin_loss()
-
-        self.batch_loss = self.margn_loss + self.recnst_loss_scale
+            self.batch_loss = self.margn_loss
+            
+        if self.reconstruction_net:
+            with tf.name_scope('Masking'):
+                self.recnst_loss_scale = self.reconstruction_loss() * self.alpha
+             
+            self.batch_loss += self.recnst_loss_scale
 
     with tf.variable_scope('Accuracy'):
       self.accuracy = tf.reduce_mean(tf.cast(tf.equal(self.y, self.y_pred), tf.float32),
@@ -119,8 +123,6 @@ class CapsNet:
     return bch_margn_loss
 
   def reconstruction_loss(self):
-    self.y_pred = tf.argmax(self.v_j_length, axis = 1, name = 'y_pred') # [?,]
-
     self.reconstruction = tf.placeholder_with_default(False, shape = (), name = 'label_mask')
     self.label_to_mask  = tf.cond(self.reconstruction, lambda: self.y, lambda: self.y_pred, name = 'label_to_mask')
 

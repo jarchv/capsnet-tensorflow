@@ -61,15 +61,20 @@ class CapsNet:
                                                       name        = 'DigitCaps'
                                                       )
 
-    with tf.name_scope('Masking'):
-      self.v_j_length = self.get_length(self.digcaps_output, axis = -1) # [?, 10]
-      self.y = tf.placeholder_with_default(np.array([-1], dtype=np.int64), shape = [None], name = 'y')
 
-      with tf.variable_scope('Masking'):
-        self.batch_sum_loss_rec = self.reconstruction_loss()
 
     with tf.name_scope('Total_Loss'):
-      self.batch_loss = self.margin_loss() + self.batch_sum_loss_rec * self.alpha
+        with tf.name_scope('Masking'):
+          self.v_j_length = self.get_length(self.digcaps_output, axis = -1) # [?, 10]
+          self.y = tf.placeholder_with_default(np.array([-1], dtype=np.int64), shape = [None], name = 'y')
+
+          with tf.variable_scope('Masking'):
+            self.recnst_loss_scale = self.reconstruction_loss() * self.alpha
+
+        with tf.name_scope('Margin_Loss'):
+            self.margn_loss = self.margin_loss()
+
+        self.batch_loss = self.margn_loss + self.recnst_loss_scale
 
     with tf.variable_scope('Accuracy'):
       self.accuracy = tf.reduce_mean(tf.cast(tf.equal(self.y, self.y_pred), tf.float32),
@@ -108,10 +113,10 @@ class CapsNet:
     T = tf.one_hot(self.y, depth = self.classes, name = 'T')
     L = tf.add(T * self.prsnt_e_sqr, self.lambda_ * (1.0 - T) * self.absnt_e_sqr, name = 'L')
 
-    margin_loss = tf.reduce_sum(L, axis = 1, name = 'margin_loss')
-    batch_loss  = tf.reduce_mean(margin_loss, axis=0, name = 'batch_loss')
+    margn_loss = tf.reduce_sum(L, axis = 1, name = 'margin_loss')
+    bch_margn_loss  = tf.reduce_mean(margn_loss, axis=0, name = 'bch_margn_loss')
 
-    return batch_loss
+    return bch_margn_loss
 
   def reconstruction_loss(self):
     self.y_pred = tf.argmax(self.v_j_length, axis = 1, name = 'y_pred') # [?,]
@@ -153,6 +158,6 @@ class CapsNet:
 
     self.squared_diff = tf.square(self.flatten_X - self.decoder_output, name = 'squared_diff')
     self.sum_loss = tf.reduce_sum(self.squared_diff , name = 'reconstruction_loss', axis=-1)
-    self.batch_sum_loss = tf.reduce_mean(self.sum_loss, name = 'reconstruction_batch_loss')
+    self.recnst_loss = tf.reduce_mean(self.sum_loss, name = 'reconstruction_batch_loss')
 
-    return self.batch_sum_loss
+    return self.recnst_loss
